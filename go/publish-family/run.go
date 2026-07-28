@@ -17,8 +17,14 @@ func run(cfg Config, p plan) {
 			pending = true
 		}
 	}
-	if !pending && len(p.rootDirt) == 0 && len(gitDirty(cfg.Repo)) == 0 {
-		stderr("family %s fully published and tree clean — nothing to do\n", p.version)
+	fencedDirty := 0
+	for _, f := range gitDirty(cfg.Repo) {
+		if cfg.underFamilyRoot(f) {
+			fencedDirty++
+		}
+	}
+	if !pending && len(p.rootDirt) == 0 && fencedDirty == 0 {
+		stderr("family %s fully published and family root clean — nothing to do\n", p.version)
 		return
 	}
 
@@ -97,20 +103,29 @@ func run(cfg Config, p plan) {
 	}
 
 	// closing sweep: dirt created during the run — committed untagged so the
-	// remote equals the working tree (clone-as-is). Loud when it touches a
+	// remote equals the working tree (clone-as-is), FENCED to the family root
+	// (other families' dirt is reported, never staged). Loud when it touches a
 	// module already tagged this run: main is running ahead of that tag.
 	if leftover := gitDirty(cfg.Repo); len(leftover) > 0 {
+		var fenced []string
 		for _, f := range leftover {
+			if !cfg.underFamilyRoot(f) {
+				stderr("NOTE: outside familyroot, left untouched: %s\n", f)
+				continue
+			}
 			if owner := cfg.ownedBy(f); owner != "" {
 				stderr("WARNING: %s modified after %s was tagged — committing untagged (main runs ahead of the tag)\n",
 					owner, p.states[owner].tag)
 			}
+			fenced = append(fenced, f)
 		}
-		git(cfg.Repo, "add", "-A")
-		if gitStagedAny(cfg.Repo) {
-			git(cfg.Repo, "commit", "-m", cfg.CommitMsg)
-			git(cfg.Repo, "push", "origin", "HEAD")
-			stderr("closing sweep: %d leftover path(s) committed and pushed, no tags\n", len(leftover))
+		if len(fenced) > 0 {
+			git(cfg.Repo, "add", "-A", "--", cfg.famRootPathspec())
+			if gitStagedAny(cfg.Repo) {
+				git(cfg.Repo, "commit", "-m", cfg.CommitMsg)
+				git(cfg.Repo, "push", "origin", "HEAD")
+				stderr("closing sweep: %d leftover path(s) committed and pushed, no tags\n", len(fenced))
+			}
 		}
 	}
 

@@ -50,7 +50,8 @@ type plan struct {
 	version  string
 	waves    [][]string
 	states   map[string]*modState
-	rootDirt []string // dirty paths owned by no module: commit #0 material
+	rootDirt    []string // dirty paths in the family root owned by no module: commit #0 material
+	outsideDirt []string // dirty paths outside the family root: reported, never staged
 }
 
 // preflight reads the world and validates it against the conf's instruction.
@@ -126,16 +127,21 @@ func preflight(cfg Config, assertVersion string) plan {
 	p.version = version
 	p.waves = cfg.waves()
 
-	// dirty inventory, partitioned by ownership
+	// dirty inventory, partitioned by ownership; outside the family root =
+	// another family's business — never staged, but never silent either
 	dirtyByDir := map[string]bool{}
 	for _, rel := range gitDirty(cfg.Repo) {
-		if owner := cfg.ownedBy(rel); owner != "" {
+		switch owner := cfg.ownedBy(rel); {
+		case owner != "":
 			dirtyByDir[owner] = true
-		} else {
+		case cfg.underFamilyRoot(rel):
 			p.rootDirt = append(p.rootDirt, rel)
+		default:
+			p.outsideDirt = append(p.outsideDirt, rel)
 		}
 	}
 	sort.Strings(p.rootDirt)
+	sort.Strings(p.outsideDirt)
 
 	// reverse-order precheck per module (see the entry ladder above)
 	remoteTags := gitRemoteTags(cfg.Repo)
@@ -181,5 +187,11 @@ func (p plan) print(cfg Config) {
 		}
 	} else {
 		stderr("commit #0: nothing (no non-module dirt)\n")
+	}
+	if len(p.outsideDirt) > 0 {
+		stderr("NOTE: %d dirty path(s) outside familyroot left untouched:\n", len(p.outsideDirt))
+		for _, f := range p.outsideDirt {
+			stderr("  %s\n", f)
+		}
 	}
 }

@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"os"
+	"path"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -12,15 +13,18 @@ import (
 // waves' readiness, resume state) is read from the world: the repo's go.mods,
 // its tags, and the module proxy.
 type Config struct {
-	Repo      string              `json:"repo"`      // umbrella git repo root (workspace root); REQUIRED, absolute
-	ModPrefix string              `json:"modprefix"` // module path prefix, must end "/"; <ModPrefix><dir> = module path = tag prefix
-	CommitMsg string              `json:"commitmsg"` // REQUIRED-explicit commit message for every commit the run makes
-	GoEnv     map[string]string   `json:"goenv"`     // toolchain env applied to every go subprocess (e.g. GOEXPERIMENT)
-	Modules   map[string][]string `json:"modules"`   // dir -> EXPLICIT family-internal deps (dirs); the instruction, cross-validated against go.mods
+	Repo       string              `json:"repo"`       // umbrella git repo root (workspace root); REQUIRED, absolute
+	FamilyRoot *string             `json:"familyroot"` // REQUIRED-explicit family root path within the repo ("" = repo root); every commit the run makes is fenced to it — other families' files in the same repo are never staged
+	ModPrefix  string              `json:"modprefix"`  // module path prefix, must end "/"; <ModPrefix><dir> = module path = tag prefix
+	CommitMsg  string              `json:"commitmsg"`  // REQUIRED-explicit commit message for every commit the run makes
+	GoEnv      map[string]string   `json:"goenv"`      // toolchain env applied to every go subprocess (e.g. GOEXPERIMENT)
+	Modules    map[string][]string `json:"modules"`    // dir -> EXPLICIT family-internal deps (dirs); the instruction, cross-validated against go.mods
+
+	famRoot string // validated *FamilyRoot
 }
 
-func loadConfig(path string) Config {
-	data, err := os.ReadFile(path)
+func loadConfig(confPath string) Config {
+	data, err := os.ReadFile(confPath)
 	if err != nil {
 		die(1, "read conf: %v\n", err)
 	}
@@ -45,9 +49,24 @@ func loadConfig(path string) Config {
 	if len(cfg.Modules) == 0 {
 		die(1, "conf: modules must not be empty\n")
 	}
+	if cfg.FamilyRoot == nil {
+		die(1, "conf: familyroot must be set explicitly (\"\" = repo root)\n")
+	}
+	cfg.famRoot = *cfg.FamilyRoot
+	if cfg.famRoot != "" {
+		if cfg.famRoot != path.Clean(cfg.famRoot) || strings.HasPrefix(cfg.famRoot, "/") || strings.HasPrefix(cfg.famRoot, "..") {
+			die(1, "conf: familyroot must be a clean repo-relative path: %q\n", cfg.famRoot)
+		}
+		if fi, err := os.Stat(filepath.Join(cfg.Repo, filepath.FromSlash(cfg.famRoot))); err != nil || !fi.IsDir() {
+			die(1, "conf: familyroot %q is not a directory under repo\n", cfg.famRoot)
+		}
+	}
 	for dir, deps := range cfg.Modules {
 		if fi, err := os.Stat(filepath.Join(cfg.Repo, filepath.FromSlash(dir), "go.mod")); err != nil || fi.IsDir() {
 			die(1, "conf: module %q has no go.mod under repo\n", dir)
+		}
+		if !cfg.underFamilyRoot(dir) {
+			die(1, "conf: module %q lies outside familyroot %q\n", dir, cfg.famRoot)
 		}
 		for _, d := range deps {
 			if _, ok := cfg.Modules[d]; !ok {
@@ -56,6 +75,23 @@ func loadConfig(path string) Config {
 		}
 	}
 	return cfg
+}
+
+// underFamilyRoot reports whether a repo-relative slash path lies inside the
+// family root — the boundary every commit this tool makes is fenced to.
+func (cfg Config) underFamilyRoot(rel string) bool {
+	if cfg.famRoot == "" {
+		return true
+	}
+	return rel == cfg.famRoot || strings.HasPrefix(rel, cfg.famRoot+"/")
+}
+
+// famRootPathspec is the git pathspec covering exactly the family root.
+func (cfg Config) famRootPathspec() string {
+	if cfg.famRoot == "" {
+		return "."
+	}
+	return cfg.famRoot
 }
 
 // waves stages the EXPLICIT dependency graph: wave N = every module whose
