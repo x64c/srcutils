@@ -1,6 +1,6 @@
-github.com/x64c/srcutils/go/internal v0.2.1 h1:rxM6bJFOZ1ORhBELSt9b8LhsmsNlDNiLaJHMEkXHXRU=
-github.com/x64c/srcutils/go/internal v0.2.1/go.mod h1:eId93w6r0WK2lttctx3z0EQOTNDwrHuQzDHSb2d01gI=
-github.com/x64c/srcutils/go/sort-imports v0.2.1 h1:NPolaS9FW2AF+VMQVid/AVWEQpwKZeXjK+OThU//gfg=
-github.com/x64c/srcutils/go/sort-imports v0.2.1/go.mod h1:4+x34nh8GShyf2QtkJqPdjbqEUNDbMvi2aZ5vUY73kY=
+github.com/x64c/srcutils/go/internal v0.2.2 h1:QOYe0zWk8wjMpBD2ECM8n2j4no7/LYXbWmAa7eR+m1s=
+github.com/x64c/srcutils/go/internal v0.2.2/go.mod h1:eId93w6r0WK2lttctx3z0EQOTNDwrHuQzDHSb2d01gI=
+github.com/x64c/srcutils/go/sort-imports v0.2.2 h1:xd2JJURH1Au89lEgy9x95xFi5O3EFGXeLzjL7hJ5Zm4=
+github.com/x64c/srcutils/go/sort-imports v0.2.2/go.mod h1:mjT0cwmPslkk+qeCdXlwRjCKXQbYHfvimR+awuaUXHU=
 golang.org/x/mod v0.38.0 h1:MECBjubtXD7yj4HrhIUcywNaGeNVUdfVnxmPajOk4yk=
 golang.org/x/mod v0.38.0/go.mod h1:V6Xz0pq8TQ3dGqVQ1FVHuelZpAL0uNhSkk9ogYP3c40=
