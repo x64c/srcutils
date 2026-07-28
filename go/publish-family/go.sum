@@ -1,4 +1,4 @@
-github.com/x64c/srcutils/go/internal v0.2.0 h1:ckK3lXuSaD/0Vb89BhUyFP/gKE6wdJ2XHXxSzX+thfw=
-github.com/x64c/srcutils/go/internal v0.2.0/go.mod h1:eId93w6r0WK2lttctx3z0EQOTNDwrHuQzDHSb2d01gI=
+github.com/x64c/srcutils/go/internal v0.2.1 h1:rxM6bJFOZ1ORhBELSt9b8LhsmsNlDNiLaJHMEkXHXRU=
+github.com/x64c/srcutils/go/internal v0.2.1/go.mod h1:eId93w6r0WK2lttctx3z0EQOTNDwrHuQzDHSb2d01gI=
 golang.org/x/mod v0.38.0 h1:MECBjubtXD7yj4HrhIUcywNaGeNVUdfVnxmPajOk4yk=
 golang.org/x/mod v0.38.0/go.mod h1:V6Xz0pq8TQ3dGqVQ1FVHuelZpAL0uNhSkk9ogYP3c40=
