@@ -11,6 +11,6 @@ use (
 // dev-time wiring for versions declared in advance of their tags;
 // go install / consumers never read go.work, so nothing to strip at publish.
 replace (
-	github.com/x64c/srcutils/go/internal v0.1.0 => ./internal
-	github.com/x64c/srcutils/go/sort-imports v0.1.0 => ./sort-imports
+	github.com/x64c/srcutils/go/internal v0.2.0 => ./internal
+	github.com/x64c/srcutils/go/sort-imports v0.2.0 => ./sort-imports
 )
